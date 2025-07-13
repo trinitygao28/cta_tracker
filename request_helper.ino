@@ -1,6 +1,13 @@
+#include <WiFiClientSecure.h>
+
 DynamicJsonDocument send_request(char* url) {
+  WiFiClientSecure client;
+  client.setInsecure();
   HTTPClient http;
-  http.begin(url);
+  if (!http.begin(client, url)) {
+    Serial.print("Unable to establish connection to ");
+    Serial.println(url);
+  }
   int httpCode = http.GET();
   
   if (httpCode > 0) {
@@ -20,7 +27,7 @@ DynamicJsonDocument send_request(char* url) {
       return doc;
     }
   } else {
-    Serial.printf("GET request failed, error: %s\n", http.errorToString(httpCode).c_str());
+    Serial.printf("GET request failed, error: %s for %s\n", http.errorToString(httpCode).c_str(), url);
     return NULL;
   }
 }

@@ -64,3 +64,28 @@ void print_values(Line key) {
         Serial.println(": No times");
     }
 }
+
+String get_values_string(Line key) {
+  DictEntry *entry = NULL;
+  HASH_FIND(hh, dict, &key, sizeof(Line), entry);
+
+  String result;
+
+  if (entry) {
+    result += entry->key.name;
+    result += ": ";
+    for (int i = 0; i < entry->values_len; i++) {
+    //   if (entry->values[i] == 0) {
+    //     result += "due ";
+    //   } else {
+        result += String(entry->values[i]);
+        result += "m ";
+    //   }
+    }
+  } else {
+    result += key.name;
+    result += ": None";
+  }
+
+  return result;
+}

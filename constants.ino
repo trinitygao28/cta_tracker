@@ -19,8 +19,8 @@ const long  gmtOffset_sec = -5 * 3600;
 const int   daylightOffset_sec = 3600;
 
 Line lines[NUM_TRAIN_TARGETS] = {
-    {"Red", "95th/Dan Ryan", "95th/Dan Ryan", MAP_ID},
-    {"Red", "Howard", "Howard", MAP_ID},
+    {"Red", "95th/Dan Ryan", "95th", MAP_ID},
+    {"Red", "Howard", "Hwd", MAP_ID},
     {"P", "Loop", "Loop", MAP_ID}
 };
 
