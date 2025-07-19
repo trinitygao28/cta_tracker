@@ -1,6 +1,6 @@
 #define MAX_LEN 32
-#define NUM_TRAIN_TARGETS 3
-#define NUM_BUS_TARGETS 2
+#define NUM_TRAIN_TARGETS 2
+#define NUM_BUS_TARGETS 3
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
@@ -9,6 +9,7 @@ typedef struct {
     char destination[MAX_LEN];
     char name[MAX_LEN];
     int stpid;
+    char stop_name[MAX_LEN];
 } Line;
 
 

@@ -19,6 +19,9 @@ uint16_t myRED = dma_display->color565(255, 150, 150);//(255, 0, 0);
 uint16_t myBLUE = dma_display->color565(100, 180, 230);//(0, 0, 255);
 uint16_t myPURPLE = dma_display -> color565(160, 120, 210);//(128, 0, 128);
 
+int num_failures;
+bool last_run_failed;
+
 
 void drawSimpleText(char *text, int x, int y, uint16_t color) {
   dma_display->setTextSize(1);
@@ -134,7 +137,8 @@ void connectToWifi() {
   }
 
   WiFi.begin(ssid, password);
-
+  Serial.println("TRYING TO CONNECT TO");
+  Serial.println(ssid);
   unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
     delay(1000);
@@ -167,15 +171,30 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  pinMode(15, OUTPUT);
+  digitalWrite(15, HIGH);  // Normal operation
+  int arr[] = {0, 2, 18, 19, 33};
+  for (int i : arr) {
+    pinMode(i, INPUT_PULLDOWN);
+  }
+  pinMode(34, INPUT);
+  pinMode(35, INPUT);
+  
   connectToWifi();
 
   synchronizeTime();
 
-  pinMode(15, OUTPUT);
-  digitalWrite(15, HIGH);  // Normal operation
+  num_failures = 0;
+  last_run_failed = false;
 
   for (int i = 0; i < NUM_BUS_TARGETS; i++) {
-    int stpid = get_stop(bus_lines[i]);
+    int stpid;
+    while (true) {
+      stpid = get_stop(bus_lines[i]);
+      if (stpid != -1) {
+        break;
+      }
+    }
     bus_lines[i].stpid = stpid;  // Modify actual struct in the array
   }
 
@@ -192,7 +211,6 @@ void setup() {
   mxconfig.gpio.d = 17;
   mxconfig.gpio.e = 32;
   mxconfig.clkphase = false;
-  //mxconfig.driver = HUB75_I2S_CFG::FM6126A;
 
   // Display Setup
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
@@ -211,55 +229,79 @@ void loop() {
   time_t now = time(nullptr); // Current time from NTP
 
   clear_dict();
-  get_arrival_times(now); // get train times
+  int failures = 0;
+  failures += get_arrival_times(now); // get train times
   for (Line line : bus_lines) { // get bus times
-    get_prediction(line, now);
+    failures += get_prediction(line, now);
   }
 
-  Serial.print("Querying at ");
-  printTimestamp(now);
-
-  int x_pos = 3;
-  int y_pos = 4;
-
-  dma_display->clearScreen();
-
-  for (int i = 0; i < NUM_TRAIN_TARGETS + NUM_BUS_TARGETS; i++) {
-
-    Line currentLine;
-    if (i < NUM_TRAIN_TARGETS) {
-      currentLine = lines[i];
-    } else {
-      currentLine = bus_lines[i - NUM_TRAIN_TARGETS];
-    }
-
-    print_values(currentLine);
-    String value = get_values_string(currentLine);
-    char charArray[value.length() + 1];  // +1 for the null terminator
-    value.toCharArray(charArray, sizeof(charArray));
-
-    truncateToFit(charArray, 64); 
-
-
-    uint16_t color;
-
-    if (strcmp(currentLine.name, "95th") == 0 || strcmp(currentLine.name, "Hwd") == 0) {
-      color = myRED;
-    }
-    else if  (strcmp(currentLine.name, "Loop") == 0) {
-      color = myPURPLE;
-    }
-    else if (strcmp(currentLine.name, "22N") == 0 || strcmp(currentLine.name, "22S") == 0) {
-      color = myBLUE;
-    }
-    else {
-      color = myWHITE;
-    }
-
-    drawSimpleText(charArray, x_pos, y_pos, color);
-    y_pos += 12;
+  if (failures == 3) {
+    if (num_failures == 0 || last_run_failed) {
+      num_failures += 1;
+    } 
+    last_run_failed = true;
+  } else {
+    num_failures = 0;
+    last_run_failed = false;
   }
 
-  Serial.println();
-  delay(10000); // Wait 10 second
+  if (num_failures == 5) {
+    connectToWifi();
+    synchronizeTime();
+    dma_display->clearScreen();
+    drawSimpleText("Reset!", 2, 5, myWHITE);
+    Serial.print("Reset at ");
+    printTimestamp(now);
+    num_failures = 0;
+  }
+
+  else {
+    Serial.print("Querying at ");
+    printTimestamp(now);
+
+    int x_pos = 3;
+    int y_pos = 4;
+
+    dma_display->clearScreen();
+
+    for (int i = 0; i < NUM_TRAIN_TARGETS + NUM_BUS_TARGETS; i++) {
+
+      Line currentLine;
+      if (i < NUM_TRAIN_TARGETS) {
+        currentLine = lines[i];
+      } else {
+        currentLine = bus_lines[i - NUM_TRAIN_TARGETS];
+      }
+
+      print_values(currentLine);
+      String value = get_values_string(currentLine);
+      char charArray[value.length() + 1];  // +1 for the null terminator
+      value.toCharArray(charArray, sizeof(charArray));
+
+      truncateToFit(charArray, 64); 
+
+
+      uint16_t color;
+
+      if (strcmp(currentLine.name, "95th") == 0 || strcmp(currentLine.name, "Hwd") == 0) {
+        color = myRED;
+      }
+      else if  (strcmp(currentLine.name, "Loop") == 0) {
+        color = myPURPLE;
+      }
+      else if (strcmp(currentLine.name, "22N") == 0 || strcmp(currentLine.name, "22S") == 0 || strcmp(currentLine.name, "81W") == 0) {
+        color = myBLUE;
+      }
+      else {
+        color = myWHITE;
+      }
+
+      drawSimpleText(charArray, x_pos, y_pos, color);
+      y_pos += 12;
+    }
+
+    Serial.println();
+    delay(60000); // Wait 1 minute  
+  }
+  
 }

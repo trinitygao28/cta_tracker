@@ -75,9 +75,6 @@ String get_values_string(Line key) {
     result += entry->key.name;
     result += ": ";
     for (int i = 0; i < entry->values_len; i++) {
-    //   if (entry->values[i] == 0) {
-    //     result += "due ";
-    //   } else {
         result += String(entry->values[i]);
         result += "m ";
     //   }

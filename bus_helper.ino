@@ -41,7 +41,7 @@ int get_stop(Line line) {
 
       for (JsonObject stop : stops) {
         const char* stpnm = stop["stpnm"];
-        if (strcmp(stpnm, BUS_STOP_NAME) == 0) {
+        if (strcmp(stpnm, line.stop_name) == 0) {
           return atoi(stop["stpid"]);
         }
       }
@@ -52,7 +52,7 @@ int get_stop(Line line) {
   }
 }
 
-void get_prediction(Line line, time_t now) {
+int get_prediction(Line line, time_t now) {
   int route = atoi(line.route);
   int stpid = line.stpid;
   char url[200];
@@ -77,5 +77,8 @@ void get_prediction(Line line, time_t now) {
         add_entry(line, minutes_to_arrival);
 
       }
+      return 1;
+  } else {
+    return -1;
   }
 }

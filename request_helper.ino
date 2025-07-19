@@ -1,13 +1,17 @@
 #include <WiFiClientSecure.h>
 
+WiFiClientSecure client;
+HTTPClient http;
+
+
 DynamicJsonDocument send_request(char* url) {
-  WiFiClientSecure client;
+  // WiFiClientSecure client;
   client.setInsecure();
-  HTTPClient http;
   if (!http.begin(client, url)) {
     Serial.print("Unable to establish connection to ");
     Serial.println(url);
   }
+
   int httpCode = http.GET();
   
   if (httpCode > 0) {
@@ -22,12 +26,15 @@ DynamicJsonDocument send_request(char* url) {
       if (error) {
         Serial.print("deserializeJson() failed: ");
         Serial.println(error.c_str());
+        http.end();
         return -1;
       }
+      http.end();
       return doc;
     }
   } else {
     Serial.printf("GET request failed, error: %s for %s\n", http.errorToString(httpCode).c_str(), url);
+    http.end();
     return NULL;
   }
 }

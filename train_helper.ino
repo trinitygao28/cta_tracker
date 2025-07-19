@@ -1,4 +1,4 @@
-void get_arrival_times(time_t now) {
+int get_arrival_times(time_t now) {
   char url[200];
   sprintf(url, "%s?key=%s&mapid=%d&outputType=JSON", TRAIN_URL, TRAIN_KEY, MAP_ID);
   // Serial.println(url);
@@ -26,5 +26,8 @@ void get_arrival_times(time_t now) {
           }
         }
       }
+      return 1;
+  } else {
+    return -1;
   }
 }
